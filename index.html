@@ -80,6 +80,11 @@ body.playing #screenGame.card{
 .menu-btn .ico{font-size:24px; line-height:1}
 .menu-btn .lock{position:absolute; right:14px; font-size:20px}
 #btnComp{padding-right:44px; font-size:21px}
+#btnWallet{padding-right:44px; padding-top:12px; padding-bottom:12px; font-size:18px}
+.wallet-text{display:flex; flex-direction:column; align-items:center; line-height:1.1}
+.wallet-sub{font-family:'Fredoka One',cursive; font-size:10px; letter-spacing:0.5px; margin-top:3px; opacity:.95}
+.wallet-sub.ok{color:#bbf7d0}
+.wallet-sub.warn{color:#fde68a}
 
 .btn-comp-green{background:linear-gradient(135deg,#16a34a,#15803d); box-shadow:0 5px 22px rgba(22,163,74,0.45)}
 .btn-comp-orange{background:linear-gradient(135deg,#d97706,#b45309); box-shadow:0 5px 22px rgba(217,119,6,0.40)}
@@ -146,8 +151,8 @@ body.playing #screenGame.card{
 .no-scores{text-align:center; color:var(--muted); font-size:12px; padding:8px; line-height:1.6}
 
 /* ===== GAME SCREEN ===== */
-.game-top{display:flex; align-items:center; justify-content:space-between; width:100%; margin-bottom:10px; gap:8px}
-.game-top .lvl-badge{font-family:'Bangers',cursive; letter-spacing:1px; font-size:16px; color:var(--gold); flex:1}
+.game-top{display:flex; align-items:center; justify-content:space-between; width:100%; margin-bottom:10px; gap:8px; padding-right:58px}
+.game-top .lvl-badge{font-family:'Bangers',cursive; letter-spacing:1px; font-size:16px; color:var(--gold); flex:1; text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .hud{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; width:100%; margin-bottom:12px}
 .hud .chip{
   background:rgba(255,255,255,0.06); border:1px solid rgba(168,85,247,0.3);
@@ -161,7 +166,7 @@ body.playing #screenGame.card{
 .chip.tries .num{color:var(--orange-l)}
 
 /* mini coq */
-.mini-pilote{position:fixed; bottom:12px; right:12px; width:54px; height:54px; z-index:30; pointer-events:none; opacity:.9; filter:drop-shadow(0 3px 8px rgba(0,0,0,0.6)); animation:bob 3.6s ease-in-out infinite}
+.mini-pilote{position:fixed; top:calc(8px + env(safe-area-inset-top)); right:10px; width:50px; height:50px; z-index:5; pointer-events:none; opacity:.92; filter:drop-shadow(0 3px 8px rgba(0,0,0,0.6)); animation:bob 3.6s ease-in-out infinite}
 
 /* ===== MASTERMIND BOARD ===== */
 .board-wrap{width:100%; flex:1; display:flex; flex-direction:column; align-items:center; overflow-y:auto; padding:4px 0 8px}
@@ -186,8 +191,8 @@ body.playing #screenGame.card{
 /* feedback pegs */
 .feedback{display:grid; grid-template-columns:repeat(2,1fr); gap:3px; width:34px; flex-shrink:0}
 .fb{width:13px; height:13px; border-radius:50%; background:rgba(255,255,255,0.08); border:1px solid rgba(0,0,0,0.3)}
-.fb.black{background:#fff; box-shadow:0 0 6px rgba(255,255,255,0.6)}
-.fb.white{background:#7c3aed; box-shadow:0 0 6px rgba(124,58,237,0.6)}
+.fb.black{background:#22c55e; box-shadow:0 0 6px rgba(34,197,94,0.7)}
+.fb.white{background:#f97316; box-shadow:0 0 6px rgba(249,115,22,0.7)}
 @keyframes popfb{0%{transform:scale(0)}70%{transform:scale(1.3)}100%{transform:scale(1)}}
 .fb.black,.fb.white{animation:popfb .3s ease-out}
 
@@ -264,7 +269,7 @@ body.mode-free .pad-tools{grid-template-columns:repeat(2,1fr)}
 .legend{font-size:10px; color:var(--muted); text-align:center; margin-top:8px; line-height:1.6}
 .legend b{color:#fff}
 .dot{display:inline-block; width:11px;height:11px;border-radius:50%;vertical-align:-1px;margin:0 2px}
-.dot.black{background:#fff}.dot.white{background:#7c3aed}
+.dot.black{background:#22c55e}.dot.white{background:#f97316}
 </style>
 </head>
 <body>
@@ -279,7 +284,6 @@ body.mode-free .pad-tools{grid-template-columns:repeat(2,1fr)}
 
   <!-- ============ MENU ============ -->
   <div class="card" id="screenMenu">
-    <div class="status-bar" id="walletStatus" style="display:none"></div>
 
     <button class="menu-btn btn-unique" onclick="show('screenFree')">
       <span class="ico">&#127919;</span><span id="lblFree">JEU LIBRE</span>
@@ -290,8 +294,10 @@ body.mode-free .pad-tools{grid-template-columns:repeat(2,1fr)}
       <span class="lock" id="compLock">&#128274;</span>
     </button>
 
-    <button class="menu-btn btn-wallet" onclick="goConnectWallet()">
-      <span class="ico">&#128091;</span><span id="lblWallet">CONNECT WALLET</span>
+    <button class="menu-btn btn-comp-orange" id="btnWallet" onclick="goConnectWallet()">
+      <span class="ico">&#128091;</span>
+      <span class="wallet-text"><span id="lblWallet">CONNECT WALLET</span><span class="wallet-sub" id="walletSub"></span></span>
+      <span class="lock" id="walletLock">&#128274;</span>
     </button>
 
     <div class="lang-row">
@@ -422,8 +428,9 @@ const I18N = {
     fillRow:'\u26A0\uFE0F Remplis toutes les cases avant de valider',
     walletFranc:'\u2705 <b>$FRANC detecte !</b>', walletNo:'\u26A0\uFE0F Wallet connecte \u2014 aucun $FRANC',
     walletNone:'\uD83D\uDC5B Wallet non connecte',
+    wConnected:'\u2705 Connecte', wNoFranc:'\u26A0\uFE0F Connecte \u2014 aucun $FRANC', wNotConnected:'Non connecte',
     newScore:'\uD83C\uDF89 Nouveau record ! $FRANC sauvegarde',
-    legend:'<span class="dot black"></span><b>Blanc</b> = bonne couleur, bonne place &nbsp;&middot;&nbsp; <span class="dot white"></span><b>Violet</b> = bonne couleur, mauvaise place',
+    legend:'<span class="dot black"></span><b>Vert</b> = bonne couleur, bonne place &nbsp;&middot;&nbsp; <span class="dot white"></span><b>Orange</b> = bonne couleur, mauvaise place',
     rules:'codes de <b>%C</b> couleurs &middot; <b>%T</b> essais'
   },
   en:{
@@ -450,8 +457,9 @@ const I18N = {
     fillRow:'\u26A0\uFE0F Fill every slot before submitting',
     walletFranc:'\u2705 <b>$FRANC detected!</b>', walletNo:'\u26A0\uFE0F Wallet connected \u2014 no $FRANC',
     walletNone:'\uD83D\uDC5B Wallet not connected',
+    wConnected:'\u2705 Connected', wNoFranc:'\u26A0\uFE0F Connected \u2014 no $FRANC', wNotConnected:'Not connected',
     newScore:'\uD83C\uDF89 New record! $FRANC saved',
-    legend:'<span class="dot black"></span><b>White</b> = right color, right spot &nbsp;&middot;&nbsp; <span class="dot white"></span><b>Purple</b> = right color, wrong spot',
+    legend:'<span class="dot black"></span><b>Green</b> = right color, right spot &nbsp;&middot;&nbsp; <span class="dot white"></span><b>Orange</b> = right color, wrong spot',
     rules:'<b>%C</b>-color codes &middot; <b>%T</b> tries'
   }
 };
@@ -470,6 +478,7 @@ const LEVELS = [
 
 /* ---------- Holder state ---------- */
 let isHolder = JSON.parse(localStorage.getItem('flcmm_holder') || 'false');
+let walletLinked = JSON.parse(localStorage.getItem('flcmm_walletLinked') || 'false');
 let francBalance = Number(localStorage.getItem('flcmm_balance') || 0);
 
 /* ---------- Persistent competition $FRANC bank ----------
@@ -509,7 +518,6 @@ function freshGame(mode, levelIndex){
     guesses:[],                 // [{pegs:[...], black, white}]
     current:new Array(lv.slots).fill(null),
     selIndex:0,
-    selColor:0,
     hintsUsed:0,
     revealed:new Array(lv.slots).fill(false),
     startTime:Date.now(),
@@ -574,24 +582,40 @@ async function detectHolder(){
         body:JSON.stringify({initData:tg.initData})
       });
       const d=await res.json();
+      walletLinked = !!(d && d.walletLinked);
       if(d && d.walletLinked && d.hasFranc){ isHolder=true; francBalance=Number(d.balance||0); }
       else { isHolder=false; francBalance=0; }
       localStorage.setItem('flcmm_holder',JSON.stringify(isHolder));
+      localStorage.setItem('flcmm_walletLinked',JSON.stringify(walletLinked));
       localStorage.setItem('flcmm_balance',String(francBalance));
     }catch(e){}
   }
   renderCompLock(); renderWalletStatus(); renderLevelList();
 }
 function renderWalletStatus(){
-  const bar=document.getElementById('walletStatus');
+  const sub=document.getElementById('walletSub');
+  const lock=document.getElementById('walletLock');
+  const btn=document.getElementById('btnWallet');
+  if(!sub||!lock||!btn)return;
+  // color follows $FRANC state: green + open ONLY if holder, else orange + closed
+  btn.classList.remove('btn-wallet','btn-comp-green','btn-comp-orange');
   if(isHolder){
-    bar.className='status-bar franc';
     const bal=francBalance?Number(francBalance).toLocaleString():'?';
-    bar.innerHTML=`${t('walletFranc')} ${bal} $FRANC`;
-    bar.style.display='block';
-  } else if(localStorage.getItem('flcmm_walletSeen')==='1'){
-    bar.className='status-bar no-franc'; bar.innerHTML=t('walletNo'); bar.style.display='block';
-  } else { bar.style.display='none'; }
+    sub.className='wallet-sub ok';
+    sub.textContent=`${t('wConnected')} \u00B7 ${bal} $FRANC`;
+    lock.textContent='\uD83D\uDD13';
+    btn.classList.add('btn-comp-green');
+  } else if(walletLinked){
+    sub.className='wallet-sub warn';
+    sub.textContent=t('wNoFranc');
+    lock.textContent='\uD83D\uDD12';
+    btn.classList.add('btn-comp-orange');
+  } else {
+    sub.className='wallet-sub warn';
+    sub.textContent=t('wNotConnected');
+    lock.textContent='\uD83D\uDD12';
+    btn.classList.add('btn-comp-orange');
+  }
 }
 function renderCompLock(){
   const btn=document.getElementById('btnComp'); const lock=document.getElementById('compLock');
@@ -599,7 +623,6 @@ function renderCompLock(){
   else { btn.classList.remove('btn-comp-green'); btn.classList.add('btn-comp-orange'); lock.textContent='\uD83D\uDD12'; }
 }
 function goConnectWallet(){
-  localStorage.setItem('flcmm_walletSeen','1');
   window.location.href=WALLET_PAGE;
 }
 
@@ -671,7 +694,7 @@ function startGame(){
   resetMiniPilot();
   document.getElementById('toolHint').style.display = (G.mode==='comp')?'flex':'none';
   document.body.classList.toggle('mode-free', G.mode==='free');
-  G.selIndex=0; G.selColor=0;
+  G.selIndex=0;
   buildPad(); renderHUD(); renderBoard(); renderLegendRules();
   show('screenGame'); startTimer();
 }
@@ -687,14 +710,11 @@ function buildPad(){
   const pad=document.getElementById('pad'); pad.innerHTML='';
   for(let c=0;c<G.colors;c++){
     const b=document.createElement('div');
-    b.className='pad-peg'+(c===G.selColor?' sel':'');
+    b.className='pad-peg';
     b.style.cssText='background:'+COLORS[c];
-    b.onclick=()=>{ G.selColor=c; placeAtSel(c); };
+    b.onclick=()=>{ placeColor(c); };
     pad.appendChild(b);
   }
-}
-function refreshPadSel(){
-  [...document.getElementById('pad').children].forEach((el,c)=>el.classList.toggle('sel',c===G.selColor));
 }
 
 function renderHUD(){
@@ -735,7 +755,7 @@ function makeRow(pegs, num, active, fb){
     peg.className='peg'+(empty?' empty':'')+(active && i===G.selIndex?' sel':'');
     if(!empty) peg.style.cssText='background:'+COLORS[p];
     if(active){
-      peg.onclick=()=>{ G.selIndex=i; if(G.selColor!=null) placeAtSel(G.selColor); else renderBoard(); };
+      peg.onclick=()=>{ G.selIndex=i; renderBoard(); };
     }
     pegsWrap.appendChild(peg);
   });
@@ -756,15 +776,18 @@ function makeRow(pegs, num, active, fb){
   return row;
 }
 
-function placeAtSel(color){
+function placeColor(color){
+  if(!G) return;
   G.current[G.selIndex]=color;
-  // advance selection to next empty (or next)
-  let n=G.selIndex;
-  for(let k=1;k<=G.slots;k++){ const idx=(G.selIndex+k)%G.slots; if(G.current[idx]==null){n=idx;break;} n=(G.selIndex+1)%G.slots; }
-  G.selIndex=n;
-  refreshPadSel(); renderBoard();
+  // auto-advance to the next still-empty slot so successive taps fill left to right;
+  // if the row is full, keep the current selection so the player can keep correcting it
+  for(let k=1;k<=G.slots;k++){
+    const idx=(G.selIndex+k)%G.slots;
+    if(G.current[idx]==null){ G.selIndex=idx; break; }
+  }
+  renderBoard();
 }
-function eraseSel(){ G.current[G.selIndex]=null; renderBoard(); }
+function eraseSel(){ if(!G)return; G.current[G.selIndex]=null; renderBoard(); }
 
 /* scoring of a guess: black = right color+pos, white = right color wrong pos */
 function scoreGuess(guess, secret){
