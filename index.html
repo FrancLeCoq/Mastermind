@@ -412,7 +412,7 @@ const I18N = {
     erase:'Gomme', hint:'Indice', submit:'Valider', menu:'Menu', retour:'Retour',
     lives:'VIES', franc:'$FRANC', time:'TEMPS', tries:'ESSAIS', level:'NIVEAU',
     noScores:'Aucun score pour le moment.\nJoue pour entrer dans le TOP 3 !',
-    lvl:['Tres Facile','Facile','Moyen','Dur','Tres Dur'],
+    lvl:['Facile','Normal','Difficile','Expert'],
     lockedTitle:'RESERVE AUX HOLDERS',
     lockedComp:'Le mode <b>Competition</b> est reserve aux detenteurs de <b>$FRANC</b>.<br>Connecte ton wallet pour debloquer !',
     lockedLvl:'Ce niveau est reserve aux detenteurs de <b>$FRANC</b>.<br>Connecte ton wallet pour le debloquer !',
@@ -441,7 +441,7 @@ const I18N = {
     erase:'Erase', hint:'Hint', submit:'Submit', menu:'Menu', retour:'Back',
     lives:'LIVES', franc:'$FRANC', time:'TIME', tries:'TRIES', level:'LEVEL',
     noScores:'No score yet.\nPlay to enter the TOP 3!',
-    lvl:['Very Easy','Easy','Medium','Hard','Very Hard'],
+    lvl:['Easy','Normal','Hard','Expert'],
     lockedTitle:'HOLDERS ONLY',
     lockedComp:'<b>Competition</b> mode is reserved for <b>$FRANC</b> holders.<br>Connect your wallet to unlock!',
     lockedLvl:'This level is reserved for <b>$FRANC</b> holders.<br>Connect your wallet to unlock!',
@@ -471,15 +471,15 @@ function t(k){return I18N[lang][k]}
 const LEVELS = [
   {name:0, slots:4, colors:6, tries:12, dup:false, holderOnly:false, stars:'\u2B50',                 baseScore:1000},
   {name:1, slots:4, colors:6, tries:10, dup:true,  holderOnly:false, stars:'\u2B50\u2B50',           baseScore:1500},
-  {name:2, slots:5, colors:7, tries:10, dup:true,  holderOnly:true,  stars:'\u2B50\u2B50\u2B50',     baseScore:2200},
-  {name:3, slots:5, colors:8, tries:9,  dup:true,  holderOnly:true,  stars:'\u2B50\u2B50\u2B50\u2B50',baseScore:3000},
-  {name:4, slots:6, colors:8, tries:9,  dup:true,  holderOnly:true,  stars:'\u2B50\u2B50\u2B50\u2B50\u2B50',baseScore:4200},
+  {name:2, slots:4, colors:8, tries:10, dup:true,  holderOnly:true,  stars:'\u2B50\u2B50\u2B50',     baseScore:2400},
+  {name:3, slots:5, colors:8, tries:10, dup:true,  holderOnly:true,  stars:'\u2B50\u2B50\u2B50\u2B50',baseScore:3400},
 ];
 
 /* ---------- Holder state ---------- */
 let isHolder = JSON.parse(localStorage.getItem('flcmm_holder') || 'false');
 let walletLinked = JSON.parse(localStorage.getItem('flcmm_walletLinked') || 'false');
 let francBalance = Number(localStorage.getItem('flcmm_balance') || 0);
+let unlockReason = localStorage.getItem('flcmm_reason') || null;  // "solana" | "ton" | "stars" | null
 
 /* ---------- Persistent competition $FRANC bank ----------
    Starts at 200 $FRANC once. Never below 0.
@@ -583,11 +583,21 @@ async function detectHolder(){
       });
       const d=await res.json();
       walletLinked = !!(d && d.walletLinked);
-      if(d && d.walletLinked && d.hasFranc){ isHolder=true; francBalance=Number(d.balance||0); }
-      else { isHolder=false; francBalance=0; }
+
+      // Verdict de déblocage : nouveau backend → d.unlocked,
+      // ancien backend → fallback hasFranc. Les deux marchent.
+      isHolder = !!(d && (d.unlocked ?? (d.walletLinked && d.hasFranc)));
+
+      // Raison du déblocage : "solana" | "ton" | "stars" | null
+      unlockReason = (d && d.reason) || (isHolder ? 'solana' : null);
+
+      // Solde réel (0 pour un déblocage via Stars)
+      francBalance = isHolder ? Number(d.balance || 0) : 0;
+
       localStorage.setItem('flcmm_holder',JSON.stringify(isHolder));
-      localStorage.setItem('flcmm_walletLinked',JSON.stringify(walletLinked));
       localStorage.setItem('flcmm_balance',String(francBalance));
+      localStorage.setItem('flcmm_walletLinked',JSON.stringify(walletLinked));
+      localStorage.setItem('flcmm_reason', unlockReason || '');
     }catch(e){}
   }
   renderCompLock(); renderWalletStatus(); renderLevelList();
@@ -600,11 +610,17 @@ function renderWalletStatus(){
   // color follows $FRANC state: green + open ONLY if holder, else orange + closed
   btn.classList.remove('btn-wallet','btn-comp-green','btn-comp-orange');
   if(isHolder){
-    const bal=francBalance?Number(francBalance).toLocaleString():'?';
-    sub.className='wallet-sub ok';
-    sub.textContent=`${t('wConnected')} \u00B7 ${bal} $FRANC`;
     lock.textContent='\uD83D\uDD13';
     btn.classList.add('btn-comp-green');
+    sub.className='wallet-sub ok';
+
+    if(unlockReason==='stars'){
+      sub.textContent='Unlocked via \u2B50';
+    } else {
+      const sym = unlockReason==='ton' ? '\uD83D\uDC8E' : '\u25CE';   // 💎 TON · ◎ Solana
+      const bal = francBalance ? Number(francBalance).toLocaleString() : '?';
+      sub.textContent=`${t('wConnected')} ${sym} \u00B7 ${bal} $FRANC`;
+    }
   } else if(walletLinked){
     sub.className='wallet-sub warn';
     sub.textContent=t('wNoFranc');
