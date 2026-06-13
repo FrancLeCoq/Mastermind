@@ -135,7 +135,17 @@ body.playing #screenGame.card{
   touch-action:manipulation; transition:transform .12s;
 }
 .lvl-btn:active{transform:scale(0.98)}
-.lvl-btn.lockedb{opacity:.55}
+.lvl-btn.unlocked{
+  border-color:rgba(34,197,94,0.7);
+  background:linear-gradient(135deg,rgba(22,163,74,0.30),rgba(21,128,61,0.30));
+}
+.lvl-btn.lockedb{
+  border-color:rgba(217,119,6,0.7);
+  background:linear-gradient(135deg,rgba(217,119,6,0.22),rgba(180,83,9,0.22));
+  opacity:1;
+}
+.lvl-btn.lockedb .meta-mini{opacity:.85}
+.lvl-btn .lk{font-size:18px}
 .lvl-btn .ll{display:flex; align-items:center; gap:8px}
 .lvl-btn .stars{font-size:13px}
 .lvl-btn .meta-mini{font-size:10px; color:var(--muted); margin-left:4px}
